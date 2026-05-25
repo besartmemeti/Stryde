@@ -1,23 +1,15 @@
-//
-//  StrydeApp.swift
-//  Stryde
-//
-//  Created by Besart Memeti on 25.05.2026.
-//
-
 import SwiftUI
 import SwiftData
 
 @main
 struct StrydeApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+    @State private var runTracker = RunTracker()
 
+    let modelContainer: ModelContainer = {
+        let schema = Schema([Run.self, RoutePoint.self])
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            return try ModelContainer(for: schema, configurations: [config])
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
@@ -25,8 +17,10 @@ struct StrydeApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MainTabView()
+                .environment(runTracker)
+                .environment(runTracker.locationService)
         }
-        .modelContainer(sharedModelContainer)
+        .modelContainer(modelContainer)
     }
 }
