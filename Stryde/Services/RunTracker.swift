@@ -4,7 +4,7 @@ import UIKit
 import ActivityKit
 import UserNotifications
 
-struct LocationSnapshot {
+struct LocationSnapshot: Codable {
     let latitude: Double
     let longitude: Double
     let altitude: Double
@@ -74,6 +74,7 @@ final class RunTracker {
         locationService.onLocation = nil
         isRunning = false
         endLiveActivity()
+        RunRecoveryStore.clear()
     }
 
     func reset() {
@@ -85,6 +86,32 @@ final class RunTracker {
         startTime = nil
         lastLocation = nil
         goalDistance = nil
+        RunRecoveryStore.clear()
+    }
+
+    func restoreAndResume(from state: PersistedRunState) {
+        snapshots = state.snapshots
+        distance = state.distance
+        goalDistance = state.goalDistance
+        goalReached = state.goalDistance.map { state.distance >= $0 } ?? false
+        startTime = state.startTime
+        lastLocation = nil
+        isRunning = true
+
+        locationService.onLocation = { [weak self] loc in self?.handle(loc) }
+        locationService.startTracking()
+        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            self?.tick()
+        }
+
+        #if targetEnvironment(simulator)
+        simIndex = 0
+        simTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            self?.playSimulatorPoint()
+        }
+        #endif
+
+        startLiveActivity()
     }
 
     var currentPace: Double? {
@@ -124,6 +151,17 @@ final class RunTracker {
             }
         }
         lastLocation = location
+        persistState()
+    }
+
+    private func persistState() {
+        guard let start = startTime else { return }
+        RunRecoveryStore.save(PersistedRunState(
+            startTime: start,
+            goalDistance: goalDistance,
+            distance: distance,
+            snapshots: snapshots
+        ))
     }
 
     #if targetEnvironment(simulator)

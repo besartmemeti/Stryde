@@ -4,6 +4,7 @@ import SwiftData
 @main
 struct StrydeApp: App {
     @State private var runTracker = RunTracker()
+    @State private var router = AppRouter()
 
     let modelContainer: ModelContainer = {
         let schema = Schema([Run.self, RoutePoint.self])
@@ -20,6 +21,11 @@ struct StrydeApp: App {
             MainTabView()
                 .environment(runTracker)
                 .environment(runTracker.locationService)
+                .environment(router)
+                .onOpenURL { url in
+                    router.pendingImportURL = url
+                    router.selectedTab = 1
+                }
         }
         .modelContainer(modelContainer)
     }

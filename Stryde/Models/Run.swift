@@ -10,6 +10,7 @@ final class Run {
     var distance: Double
     var tags: [String]
     var goalDistance: Double?
+    var importedID: UUID?
 
     @Relationship(deleteRule: .cascade)
     var routePoints: [RoutePoint]

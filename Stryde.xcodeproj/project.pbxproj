@@ -29,11 +29,21 @@
 		19CFD4202FC48B0E00BC45BB /* StrydeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = StrydeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		BA5E000E00000000000000BB /* Exceptions for "Stryde" folder in "Stryde" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 19CFD4062FC48B0C00BC45BB /* Stryde */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		19CFD4092FC48B0C00BC45BB /* Stryde */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				BA5E000E00000000000000BB /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+				BA5E000E00000000000000BB /* Exceptions for "Stryde" folder in "Stryde" target */,
 			);
 			path = Stryde;
 			sourceTree = "<group>";
@@ -49,16 +59,6 @@
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
-
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		BA5E000E00000000000000BB /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 19CFD4062FC48B0C00BC45BB /* Stryde */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		19CFD4042FC48B0C00BC45BB /* Frameworks */ = {

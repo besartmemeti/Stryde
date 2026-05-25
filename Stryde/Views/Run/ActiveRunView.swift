@@ -13,6 +13,8 @@ struct ActiveRunView: View {
     @State private var tags: [String] = []
     @State private var goalText = ""
     @State private var mapPosition: MapCameraPosition = .userLocation(fallback: .automatic)
+    @State private var recoveredState: PersistedRunState? = nil
+    @State private var hasCheckedRecovery = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -22,6 +24,31 @@ struct ActiveRunView: View {
         .onAppear {
             tracker.locationService.requestPermission()
             tracker.requestNotificationPermission()
+            guard !hasCheckedRecovery else { return }
+            hasCheckedRecovery = true
+            recoveredState = RunRecoveryStore.load()
+        }
+        .alert("Resume Run?", isPresented: Binding(
+            get: { recoveredState != nil },
+            set: { if !$0 { recoveredState = nil } }
+        )) {
+            Button("Resume") {
+                if let state = recoveredState {
+                    tracker.restoreAndResume(from: state)
+                    withAnimation { phase = .running }
+                }
+                recoveredState = nil
+            }
+            Button("Discard", role: .destructive) {
+                RunRecoveryStore.clear()
+                recoveredState = nil
+            }
+            Button("Cancel", role: .cancel) { recoveredState = nil }
+        } message: {
+            if let state = recoveredState {
+                let elapsed = Date().timeIntervalSince(state.startTime)
+                Text("You have an unfinished run: \(formatDistance(state.distance)) in \(formatDuration(elapsed)).")
+            }
         }
         .onChange(of: tracker.goalReached) { _, reached in
             if reached {

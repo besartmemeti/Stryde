@@ -1,11 +1,16 @@
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 struct RunHistoryView: View {
     @Query(sort: \Run.date, order: .reverse) private var runs: [Run]
     @Environment(\.modelContext) private var context
+    @Environment(AppRouter.self) private var router
     @State private var searchText = ""
     @State private var selectedTags: Set<String> = []
+    @State private var showImporter = false
+    @State private var importError: String? = nil
+    @State private var pendingDuplicate: GPXImporter.ImportedRun? = nil
 
     private var allTags: [String] {
         Array(Set(runs.flatMap(\.tags))).sorted()
@@ -59,7 +64,11 @@ struct RunHistoryView: View {
                         }
 
                         if filteredRuns.isEmpty {
-                            ContentUnavailableView.search(text: searchText.isEmpty ? selectedTags.joined(separator: ", ") : searchText)
+                            ContentUnavailableView.search(
+                                text: searchText.isEmpty
+                                    ? selectedTags.joined(separator: ", ")
+                                    : searchText
+                            )
                         } else {
                             ForEach(filteredRuns) { run in
                                 NavigationLink(value: run) {
@@ -82,18 +91,107 @@ struct RunHistoryView: View {
                 prompt: "Search runs"
             )
             .toolbar {
-                if !selectedTags.isEmpty {
-                    ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    if !selectedTags.isEmpty {
                         Button("Clear") {
                             withAnimation { selectedTags.removeAll() }
                         }
                         .font(.subheadline)
                     }
+                    Button {
+                        showImporter = true
+                    } label: {
+                        Image(systemName: "square.and.arrow.down")
+                    }
                 }
+            }
+            .fileImporter(
+                isPresented: $showImporter,
+                allowedContentTypes: [UTType("com.topografix.gpx") ?? .xml],
+                allowsMultipleSelection: false
+            ) { result in
+                switch result {
+                case .success(let urls):
+                    guard let url = urls.first else { return }
+                    importGPX(from: url)
+                case .failure(let error):
+                    importError = error.localizedDescription
+                }
+            }
+            // Incoming URL from Files app / "Open With"
+            .onChange(of: router.pendingImportURL) { _, url in
+                guard let url else { return }
+                importGPX(from: url)
+                router.pendingImportURL = nil
+            }
+            // Duplicate warning
+            .alert("Already Imported", isPresented: Binding(
+                get: { pendingDuplicate != nil },
+                set: { if !$0 { pendingDuplicate = nil } }
+            )) {
+                Button("Import Again") {
+                    if let imp = pendingDuplicate { performImport(imp) }
+                    pendingDuplicate = nil
+                }
+                Button("Cancel", role: .cancel) { pendingDuplicate = nil }
+            } message: {
+                Text("A run with this ID already exists in your history. Import again anyway?")
+            }
+            // Parse / format error
+            .alert("Import Failed", isPresented: Binding(
+                get: { importError != nil },
+                set: { if !$0 { importError = nil } }
+            )) {
+                Button("OK") { importError = nil }
+            } message: {
+                if let msg = importError { Text(msg) }
             }
         }
     }
+
+    // MARK: - Import logic
+
+    private func importGPX(from url: URL) {
+        guard let imported = GPXImporter.parse(url: url) else {
+            importError = "The file could not be read as a valid GPX track."
+            return
+        }
+        if let sid = imported.sourceID, isDuplicate(id: sid) {
+            pendingDuplicate = imported
+        } else {
+            performImport(imported)
+        }
+    }
+
+    private func isDuplicate(id: UUID) -> Bool {
+        runs.contains { $0.id == id || $0.importedID == id }
+    }
+
+    private func performImport(_ imported: GPXImporter.ImportedRun) {
+        let run = Run(
+            name: imported.name,
+            date: imported.date,
+            duration: imported.duration,
+            distance: imported.distance,
+            tags: imported.tags,
+            goalDistance: nil
+        )
+        run.importedID = imported.sourceID
+        context.insert(run)
+        for snap in imported.snapshots {
+            let pt = RoutePoint(
+                latitude: snap.latitude,
+                longitude: snap.longitude,
+                altitude: snap.altitude,
+                timestamp: snap.timestamp
+            )
+            run.routePoints.append(pt)
+        }
+        try? context.save()
+    }
 }
+
+// MARK: - FilterChip
 
 private struct FilterChip: View {
     let tag: String
@@ -119,6 +217,8 @@ private struct FilterChip: View {
         .buttonStyle(.plain)
     }
 }
+
+// MARK: - RunRowView
 
 struct RunRowView: View {
     let run: Run
