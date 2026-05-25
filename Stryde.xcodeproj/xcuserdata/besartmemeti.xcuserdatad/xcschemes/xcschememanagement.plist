@@ -9,6 +9,34 @@
 			<key>orderHint</key>
 			<integer>0</integer>
 		</dict>
+		<key>StrydeWidgetExtensionExtension.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>1</integer>
+		</dict>
+	</dict>
+	<key>SuppressBuildableAutocreation</key>
+	<dict>
+		<key>19AD318A2FC4CCFC00B6D60A</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>19CFD4062FC48B0C00BC45BB</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>19CFD4152FC48B0E00BC45BB</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>19CFD41F2FC48B0E00BC45BB</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
 	</dict>
 </dict>
 </plist>
