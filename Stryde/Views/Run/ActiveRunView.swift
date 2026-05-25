@@ -4,6 +4,13 @@ import MapKit
 
 enum RunPhase { case idle, running, saving }
 
+private struct PanelHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
 struct ActiveRunView: View {
     @Environment(RunTracker.self) private var tracker
     @Environment(\.modelContext) private var modelContext
@@ -15,12 +22,17 @@ struct ActiveRunView: View {
     @State private var mapPosition: MapCameraPosition = .userLocation(fallback: .automatic)
     @State private var recoveredState: PersistedRunState? = nil
     @State private var hasCheckedRecovery = false
+    @State private var panelHeight: CGFloat = 0
 
     var body: some View {
         ZStack(alignment: .bottom) {
             mapLayer
             controlPanel
+                .background(GeometryReader { geo in
+                    Color.clear.preference(key: PanelHeightKey.self, value: geo.size.height)
+                })
         }
+        .onPreferenceChange(PanelHeightKey.self) { panelHeight = $0 }
         .onAppear {
             tracker.locationService.requestPermission()
             tracker.requestNotificationPermission()
@@ -78,6 +90,9 @@ struct ActiveRunView: View {
         .mapControls {
             MapCompass()
             MapUserLocationButton()
+        }
+        .safeAreaInset(edge: .bottom) {
+            Color.clear.frame(height: panelHeight)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
